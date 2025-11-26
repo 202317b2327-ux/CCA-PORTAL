@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>CMDB Dump</title>
+  <title>Change Management Portal</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     :root {
@@ -22,14 +22,10 @@
       --card: #151821;
       --border: #262b36;
       --accent: #60a5fa;
-      --danger: #f87171;
-      --success: #34d399;
     }
     * { box-sizing: border-box; }
     body {
-      margin: 0;
-      background: var(--bg);
-      color: var(--fg);
+      margin: 0; background: var(--bg); color: var(--fg);
       font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
     }
     header {
@@ -45,53 +41,41 @@
       background: var(--card);
     }
     .wrapper { max-width: 1200px; margin: 0 auto; padding: 20px; }
-    .card {
-      background: var(--card); border: 1px solid var(--border);
-      border-radius: 12px; padding: 16px;
-    }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
     .tabs { display: flex; gap: 8px; border-bottom: 1px solid var(--border); margin-bottom: 12px; }
-    .tab {
-      padding: 10px 14px; border-radius: 8px 8px 0 0; cursor: pointer;
-      background: transparent; border: 1px solid transparent; font-weight: 600;
-    }
-    .tab.active {
-      background: var(--bg); border-color: var(--border); border-bottom-color: var(--bg);
-    }
+    .tab { padding: 10px 14px; border-radius: 8px 8px 0 0; cursor: pointer; background: transparent; border: 1px solid transparent; font-weight: 600; }
+    .tab.active { background: var(--bg); border-color: var(--border); border-bottom-color: var(--bg); }
     .hidden { display: none !important; }
 
-    /* Form */
     form .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     label { font-size: 12px; color: var(--muted); margin-bottom: 4px; display: block; }
-    input, select {
-      width: 100%; padding: 10px; border: 1px solid var(--border);
-      border-radius: 8px; background: var(--bg); color: var(--fg);
-    }
-    input:invalid { border-color: var(--danger); }
+    input, select, textarea { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--fg); }
+    textarea { min-height: 80px; resize: vertical; }
+    input:invalid, select:invalid { border-color: var(--danger); }
     .actions { display: flex; gap: 10px; margin-top: 12px; }
-    button {
-      padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border);
-      cursor: pointer; background: var(--bg); color: var(--fg);
-    }
+    button { padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border); cursor: pointer; background: var(--bg); color: var(--fg); }
     .btn-primary { background: var(--accent); color: white; border-color: var(--accent); }
-    .btn-danger { background: var(--danger); color: white; border-color: var(--danger); }
     .btn-muted { background: var(--card); }
     .status { font-size: 12px; color: var(--muted); margin-top: 8px; min-height: 16px; }
 
-    /* Table */
     .table-wrap { max-height: 60vh; overflow: auto; border: 1px solid var(--border); border-radius: 10px; }
     table { width: 100%; border-collapse: collapse; }
     th, td { padding: 10px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
     th { position: sticky; top: 0; background: var(--card); z-index: 1; }
-    .ci-actions { display: flex; gap: 8px; }
     .pill { display: inline-block; padding: 4px 8px; border-radius: 999px; font-size: 12px; border: 1px solid var(--border); background: var(--bg); }
     .footer-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 12px; }
+    .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 50; }
+    .modal { background: var(--bg); color: var(--fg); border: 1px solid var(--border); border-radius: 12px; padding: 16px; width: min(800px, 95vw); max-height: 80vh; overflow: auto; }
+    .modal h3 { margin-top: 0; }
+    .modal .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .close-modal { float: right; }
   </style>
 </head>
 <body>
   <header>
     <div class="brand">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="12" r="10" opacity="0.15"/><path d="M7 12h10M12 7v10" stroke="currentColor" stroke-width="2" fill="none"/></svg>
-      <h1>CMDB Dashboard</h1>
+      <h1>Change Management Portal</h1>
     </div>
     <button id="themeToggle" class="theme-toggle" type="button">Toggle theme</button>
   </header>
@@ -99,94 +83,77 @@
   <main class="wrapper">
     <div class="card">
       <div class="tabs">
-        <button class="tab active" data-tab="create">CI Creation</button>
-        <button class="tab" data-tab="all">All CIs</button>
+        <button class="tab active" data-tab="create">Create Change</button>
+        <button class="tab" data-tab="all">All Changes</button>
       </div>
 
-      <!-- Tab 1: CI Creation -->
+      <!-- Tab 1: Create Change -->
       <section id="tab-create">
-        <form id="ciForm" autocomplete="off">
+        <form id="changeForm" autocomplete="off">
           <div class="row">
             <div>
+              <label>Change Number (auto)</label>
+              <input type="text" id="changeNumber" readonly />
+            </div>
+            <div>
+              <label>Priority</label>
+              <select id="priority" required>
+                <option value="">Select</option>
+                <option>Low</option>
+                <option>Medium</option>
+                <option>High</option>
+              </select>
+            </div>
+            <div>
+              <label>Type</label>
+              <select id="type" required>
+                <option value="">Select</option>
+                <option>Normal</option>
+                <option>Emergency</option>
+              </select>
+            </div>
+            <div>
+              <label>Opened By</label>
+              <input type="text" id="openedBy" placeholder="Your name" required />
+            </div>
+            <div>
               <label>Configuration Item</label>
-              <input type="text" id="ciName" placeholder="Server-001" required />
-            </div>
-            <div>
-              <label>Install Status</label>
-              <select id="installStatus" required>
-                <option value="">Select</option>
-                <option>In Use</option>
-                <option>Maintenance</option>
-                <option>Retired</option>
+              <select id="ciSelect" required>
+                <option value="">Select CI</option>
               </select>
             </div>
             <div>
-              <label>Category</label>
-              <select id="category" required>
-                <option value="">Select</option>
-                <option>Logical</option>
-                <option>Physical</option>
-              </select>
+              <label>Environment (auto)</label>
+              <input type="text" id="environment" readonly />
             </div>
             <div>
-              <label>Environment</label>
-              <select id="environment" required>
-                <option value="">Select</option>
-                <option>Production</option>
-                <option>Non-Production</option>
-                <option>Test</option>
-                <option>Development</option>
-              </select>
+              <label>State (auto)</label>
+              <input type="text" id="state" value="Drafted" readonly />
             </div>
             <div>
-              <label>Service Class</label>
-              <select id="serviceClass" required>
-                <option value="">Select</option>
-                <option>Light</option>
-                <option>Standard</option>
-                <option>Advanced</option>
-              </select>
+              <label>Planned Start Date</label>
+              <input type="datetime-local" id="plannedStart" required />
             </div>
             <div>
-              <label>Location</label>
-              <input type="text" id="location" placeholder="DC-1 / Rack 3" />
+              <label>Planned End Date</label>
+              <input type="datetime-local" id="plannedEnd" required />
             </div>
             <div>
-              <label>Operating System</label>
-              <input type="text" id="os" placeholder="Windows Server 2022" />
+              <label>Owned By (auto from CI)</label>
+              <input type="text" id="ownedBy" readonly />
             </div>
             <div>
-              <label>RAM</label>
-              <input type="text" id="ram" inputmode="numeric" pattern="^[0-9]+$" placeholder="64" />
+              <label>Support Group (auto from CI)</label>
+              <input type="text" id="supportGroup" readonly />
             </div>
-            <div>
-              <label>Disk</label>
-              <input type="text" id="disk" placeholder="2 TB" />
-            </div>
-            <div>
-              <label>CPU Count</label>
-              <input type="text" id="cpuCount" inputmode="numeric" pattern="^[0-9]+$" placeholder="8" />
-            </div>
-            <div>
-              <label>CPU Type</label>
-              <input type="text" id="cpuType" placeholder="Intel Xeon" />
-            </div>
-            <div>
-              <label>Domain</label>
-              <input type="text" id="domain" placeholder="corp.example.com" />
-            </div>
-            <div>
-              <label>Owned By</label>
-              <input type="text" id="ownedBy" placeholder="Team Alpha" />
-            </div>
-            <div>
-              <label>Support Group</label>
-              <input type="text" id="supportGroup" placeholder="InfraOps" />
+            <div style="grid-column: 1 / -1;">
+              <label>Description</label>
+              <textarea id="description" placeholder="Change details..."></textarea>
             </div>
           </div>
 
           <div class="actions">
-            <button class="btn-primary" type="submit" id="saveBtn">Save CI</button>
+            <button class="btn-primary" type="submit" id="saveBtn">Create Change</button>
             <button class="btn-muted" type="button" id="resetBtn">Reset</button>
           </div>
           <div id="formStatus" class="status"></div>
@@ -195,30 +162,27 @@
         </form>
       </section>
 
-      <!-- Tab 2: All CIs -->
+      <!-- Tab 2: All Changes (view-only) -->
       <section id="tab-all" class="hidden">
         <div class="table-wrap">
-          <table id="ciTable">
+          <table id="changesTable">
             <thead>
               <tr>
+                <th>Change Number</th>
+                <th>Priority</th>
+                <th>Type</th>
+                <th>Opened By</th>
                 <th>Configuration Item</th>
-                <th>Install Status</th>
-                <th>Category</th>
                 <th>Environment</th>
-                <th>Service Class</th>
-                <th>Location</th>
-                <th>OS</th>
-                <th>RAM</th>
-                <th>Disk</th>
-                <th>CPU Count</th>
-                <th>CPU Type</th>
-                <th>Domain</th>
                 <th>Owned By</th>
                 <th>Support Group</th>
+                <th>State</th>
+                <th>Planned Start</th>
+                <th>Planned End</th>
                 <th>Action</th>
               </tr>
             </thead>
-            <tbody id="ciTableBody"></tbody>
+            <tbody id="changesTableBody"></tbody>
           </table>
         </div>
         <div class="footer-actions">
@@ -229,12 +193,19 @@
     </div>
   </main>
 
+  <!-- Details modal -->
+  <div id="modalBackdrop" class="modal-backdrop">
+    <div class="modal">
+      <button class="close-modal" id="closeModalBtn">Close</button>
+      <h3>Change Details</h3>
+      <div id="modalContent" class="grid"></div>
+    </div>
+  </div>
+
   <script type="module">
-    // --- Firebase shared module content inline (includes updateDoc) ---
+    // Firebase
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import {
-      getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc
-    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyB9_BivxcGLoY3HipP_c571pA9Robd0yPE",
@@ -248,21 +219,21 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // --- Config ---
-    const COLLECTION_NAME = "CMDB_DUMP";
+    // Collections
+    const CMDB_COLLECTION = "CMDB_DUMP";
+    const CHANGES_COLLECTION = "CHANGES";
 
-    // --- Theme toggle ---
+    // Theme
     const root = document.documentElement;
-    const savedTheme = localStorage.getItem("cmdb_theme") || "light";
+    const savedTheme = localStorage.getItem("change_theme") || "light";
     root.setAttribute("data-theme", savedTheme);
     document.getElementById("themeToggle").addEventListener("click", () => {
-      const current = root.getAttribute("data-theme");
-      const next = current === "dark" ? "light" : "dark";
+      const next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
       root.setAttribute("data-theme", next);
-      localStorage.setItem("cmdb_theme", next);
+      localStorage.setItem("change_theme", next);
     });
 
-    // --- Tabs ---
+    // Tabs
     const tabs = document.querySelectorAll(".tab");
     const tabCreate = document.getElementById("tab-create");
     const tabAll = document.getElementById("tab-all");
@@ -276,74 +247,25 @@
       });
     });
 
-    // --- State ---
+    // State
     let allCIs = [];
+    let allChanges = [];
 
-    // --- Helpers ---
-    function getFormData() {
-      return {
-        ciName: document.getElementById("ciName").value.trim(),
-        installStatus: document.getElementById("installStatus").value,
-        category: document.getElementById("category").value,
-        environment: document.getElementById("environment").value,
-        serviceClass: document.getElementById("serviceClass").value,
-        location: document.getElementById("location").value.trim(),
-        os: document.getElementById("os").value.trim(),
-        ram: document.getElementById("ram").value.trim(),
-        disk: document.getElementById("disk").value.trim(),
-        cpuCount: document.getElementById("cpuCount").value.trim(),
-        cpuType: document.getElementById("cpuType").value.trim(),
-        domain: document.getElementById("domain").value.trim(),
-        ownedBy: document.getElementById("ownedBy").value.trim(),
-        supportGroup: document.getElementById("supportGroup").value.trim(),
-        updatedAt: new Date().toISOString(),
-      };
-    }
+    // Elements
+    const ciSelect = document.getElementById("ciSelect");
+    const environmentEl = document.getElementById("environment");
+    const ownedByEl = document.getElementById("ownedBy");
+    const supportGroupEl = document.getElementById("supportGroup");
+    const changeNumberEl = document.getElementById("changeNumber");
+    const formStatus = document.getElementById("formStatus");
 
-    function setFormData(ci) {
-      document.getElementById("ciName").value = ci.ciName || "";
-      document.getElementById("installStatus").value = ci.installStatus || "";
-      document.getElementById("category").value = ci.category || "";
-      document.getElementById("environment").value = ci.environment || "";
-      document.getElementById("serviceClass").value = ci.serviceClass || "";
-      document.getElementById("location").value = ci.location || "";
-      document.getElementById("os").value = ci.os || "";
-      document.getElementById("ram").value = ci.ram || "";
-      document.getElementById("disk").value = ci.disk || "";
-      document.getElementById("cpuCount").value = ci.cpuCount || "";
-      document.getElementById("cpuType").value = ci.cpuType || "";
-      document.getElementById("domain").value = ci.domain || "";
-      document.getElementById("ownedBy").value = ci.ownedBy || "";
-      document.getElementById("supportGroup").value = ci.supportGroup || "";
-    }
+    // Modal elements
+    const modalBackdrop = document.getElementById("modalBackdrop");
+    const modalContent = document.getElementById("modalContent");
+    const closeModalBtn = document.getElementById("closeModalBtn");
+    closeModalBtn.addEventListener("click", () => (modalBackdrop.style.display = "none"));
 
-    function clearForm() {
-      document.getElementById("ciForm").reset();
-      document.getElementById("editingId").value = "";
-      document.getElementById("formStatus").textContent = "";
-    }
-
-    function validateNumbers() {
-      const ram = document.getElementById("ram");
-      const cpuCount = document.getElementById("cpuCount");
-      const numRegex = /^[0-9]+$/;
-      let ok = true;
-
-      if (ram.value && !numRegex.test(ram.value)) { ok = false; ram.setCustomValidity("Only numbers allowed"); }
-      else { ram.setCustomValidity(""); }
-
-      if (cpuCount.value && !numRegex.test(cpuCount.value)) { ok = false; cpuCount.setCustomValidity("Only numbers allowed"); }
-      else { cpuCount.setCustomValidity(""); }
-
-      return ok;
-    }
-
-    function showStatus(msg) {
-      const el = document.getElementById("formStatus");
-      el.textContent = msg;
-      setTimeout(() => { if (el.textContent === msg) el.textContent = ""; }, 3000);
-    }
-
+    // Helpers
     function escapeHtml(str = "") {
       return String(str)
         .replaceAll("&", "&amp;")
@@ -352,126 +274,78 @@
         .replaceAll('"', "&quot;")
         .replaceAll("'", "&#039;");
     }
-
-    // --- Fetch and render ---
-    async function loadAll() {
-      const snap = await getDocs(collection(db, COLLECTION_NAME));
-      allCIs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      renderTable();
+    function showStatus(msg) {
+      formStatus.textContent = msg;
+      setTimeout(() => { if (formStatus.textContent === msg) formStatus.textContent = ""; }, 3000);
+    }
+    function genChangeNumber() {
+      const n = Math.floor(Math.random() * 1_000_0000).toString().padStart(7, "0");
+      return `CHG${n}`;
+    }
+    async function ensureUniqueChangeNumber() {
+      for (let i = 0; i < 5; i++) {
+        const candidate = genChangeNumber();
+        const snap = await getDocs(collection(db, CHANGES_COLLECTION));
+        const exists = snap.docs.some(d => (d.data().changeNumber === candidate));
+        if (!exists) return candidate;
+      }
+      const ts = Date.now().toString().slice(-7);
+      return `CHG${ts}`;
     }
 
-    function renderTable() {
-      const tbody = document.getElementById("ciTableBody");
+    // Load CIs
+    async function loadCIs() {
+      const snap = await getDocs(collection(db, CMDB_COLLECTION));
+      allCIs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      ciSelect.innerHTML = `<option value="">Select CI</option>` + allCIs.map(ci =>
+        `<option value="${ci.id}">${escapeHtml(ci.ciName || "(unnamed)")}</option>`
+      ).join("");
+    }
+    ciSelect.addEventListener("change", () => {
+      const ciId = ciSelect.value;
+      const ci = allCIs.find(c => c.id === ciId);
+      environmentEl.value = ci?.environment || "";
+      ownedByEl.value = ci?.ownedBy || "";
+      supportGroupEl.value = ci?.supportGroup || "";
+    });
+
+    // Load changes
+    async function loadChanges() {
+      const snap = await getDocs(collection(db, CHANGES_COLLECTION));
+      allChanges = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderChangesTable();
+    }
+    function renderChangesTable() {
+      const tbody = document.getElementById("changesTableBody");
       tbody.innerHTML = "";
-      allCIs.forEach(ci => {
+      allChanges.forEach(ch => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td>${escapeHtml(ci.ciName)}</td>
-          <td><span class="pill">${escapeHtml(ci.installStatus || "")}</span></td>
-          <td>${escapeHtml(ci.category || "")}</td>
-          <td>${escapeHtml(ci.environment || "")}</td>
-          <td>${escapeHtml(ci.serviceClass || "")}</td>
-          <td>${escapeHtml(ci.location || "")}</td>
-          <td>${escapeHtml(ci.os || "")}</td>
-          <td>${escapeHtml(ci.ram || "")}</td>
-          <td>${escapeHtml(ci.disk || "")}</td>
-          <td>${escapeHtml(ci.cpuCount || "")}</td>
-          <td>${escapeHtml(ci.cpuType || "")}</td>
-          <td>${escapeHtml(ci.domain || "")}</td>
-          <td>${escapeHtml(ci.ownedBy || "")}</td>
-          <td>${escapeHtml(ci.supportGroup || "")}</td>
-          <td>
-            <div class="ci-actions">
-              <button class="btn-muted" data-action="modify" data-id="${ci.id}">Modify</button>
-              <button class="btn-danger" data-action="delete" data-id="${ci.id}">Delete</button>
-            </div>
-          </td>
+          <td><button class="btn-muted" data-action="view" data-id="${ch.id}">${escapeHtml(ch.changeNumber)}</button></td>
+          <td>${escapeHtml(ch.priority || "")}</td>
+          <td>${escapeHtml(ch.type || "")}</td>
+          <td>${escapeHtml(ch.openedBy || "")}</td>
+          <td>${escapeHtml(ch.ciName || "")}</td>
+          <td>${escapeHtml(ch.environment || "")}</td>
+          <td>${escapeHtml(ch.ownedBy || "")}</td>
+          <td>${escapeHtml(ch.supportGroup || "")}</td>
+          <td><span class="pill">${escapeHtml(ch.state || "")}</span></td>
+          <td>${escapeHtml(ch.plannedStart || "")}</td>
+          <td>${escapeHtml(ch.plannedEnd || "")}</td>
+          <td><button class="btn-muted" data-action="view" data-id="${ch.id}">View</button></td>
         `;
         tbody.appendChild(tr);
       });
     }
 
-    // --- Form submit (create or update) ---
-    document.getElementById("ciForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      if (!validateNumbers()) {
-        showStatus("Please fix numeric fields.");
-        return;
-      }
-
-      const data = getFormData();
-      const editingId = document.getElementById("editingId").value;
-
-      if (!data.ciName) {
-        showStatus("Configuration Item name is required.");
-        return;
-      }
-
-      try {
-        if (editingId) {
-          const ref = doc(db, COLLECTION_NAME, editingId);
-          await updateDoc(ref, data);
-          showStatus("CI updated.");
-        } else {
-          await addDoc(collection(db, COLLECTION_NAME), data);
-          showStatus("CI created.");
-        }
-        await loadAll();
-        // Switch to All CIs tab after save so users can immediately see the entry
-        document.querySelector('.tab[data-tab="all"]').click();
-        clearForm();
-      } catch (err) {
-        console.error(err);
-        showStatus("Operation failed. Check console for details.");
-      }
-    });
-
-    // --- Reset ---
-    document.getElementById("resetBtn").addEventListener("click", clearForm);
-
-    // --- Table actions: modify/delete ---
-    document.getElementById("ciTableBody").addEventListener("click", async (e) => {
-      const btn = e.target.closest("button");
-      if (!btn) return;
-      const id = btn.dataset.id;
-      const action = btn.dataset.action;
-      if (action === "modify") {
-        const ci = allCIs.find(x => x.id === id);
-        if (!ci) return;
-        setFormData(ci);
-        document.getElementById("editingId").value = id;
-        // Jump to CI Creation tab for editing
-        document.querySelector('.tab[data-tab="create"]').click();
-        showStatus("Editing CI. Save to apply changes.");
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      } else if (action === "delete") {
-        const ok = confirm("Are you sure? This will delete the CI.");
-        if (!ok) return;
-        try {
-          await deleteDoc(doc(db, COLLECTION_NAME, id));
-          showStatus("CI deleted.");
-          await loadAll();
-        } catch (err) {
-          console.error(err);
-          showStatus("Delete failed. Check console for details.");
-        }
-      }
-    });
-
-    // --- Refresh ---
-    document.getElementById("refreshBtn").addEventListener("click", loadAll);
-
-    // --- Export CSV ---
+    // Export CSV
     document.getElementById("exportCsvBtn").addEventListener("click", () => {
       const rows = [
-        [
-          "Configuration Item","Install Status","Category","Environment","Service Class",
-          "Location","Operating System","RAM","Disk","CPU Count","CPU Type","Domain","Owned By","Support Group"
-        ],
-        ...allCIs.map(ci => [
-          ci.ciName || "", ci.installStatus || "", ci.category || "", ci.environment || "", ci.serviceClass || "",
-          ci.location || "", ci.os || "", ci.ram || "", ci.disk || "", ci.cpuCount || "", ci.cpuType || "",
-          ci.domain || "", ci.ownedBy || "", ci.supportGroup || ""
+        ["Change Number","Priority","Type","Opened By","Configuration Item","Environment","Owned By","Support Group","State","Planned Start","Planned End","Description"],
+        ...allChanges.map(ch => [
+          ch.changeNumber || "", ch.priority || "", ch.type || "", ch.openedBy || "",
+          ch.ciName || "", ch.environment || "", ch.ownedBy || "", ch.supportGroup || "",
+          ch.state || "", ch.plannedStart || "", ch.plannedEnd || "", (ch.description || "").replace(/\r?\n/g, " ")
         ])
       ];
       const csv = rows.map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\r\n");
@@ -479,15 +353,113 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "cmdb_dump.csv";
+      a.download = "changes_dump.csv";
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     });
 
-    // --- Init ---
-    loadAll();
+    // Refresh
+    document.getElementById("refreshBtn").addEventListener("click", async () => {
+      await Promise.all([loadCIs(), loadChanges()]);
+      showStatus("Refreshed.");
+    });
+
+    // Create Change
+    document.getElementById("changeForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const ciId = ciSelect.value;
+      if (!ciId) { showStatus("Please select a CI."); return; }
+      const ci = allCIs.find(c => c.id === ciId);
+      if (!ci) { showStatus("Selected CI not found."); return; }
+
+      const plannedStart = document.getElementById("plannedStart").value;
+      const plannedEnd = document.getElementById("plannedEnd").value;
+      if (!plannedStart || !plannedEnd) { showStatus("Please provide planned dates."); return; }
+
+      const changeNumber = await ensureUniqueChangeNumber();
+
+      const data = {
+        changeNumber,
+        priority: document.getElementById("priority").value,
+        type: document.getElementById("type").value,
+        openedBy: document.getElementById("openedBy").value.trim(),
+        ciId: ciId,
+        ciName: ci.ciName || "",
+        environment: ci.environment || "",
+        ownedBy: ci.ownedBy || "",
+        supportGroup: ci.supportGroup || "",
+        state: "Drafted",
+        plannedStart,
+        plannedEnd,
+        description: document.getElementById("description").value.trim(),
+        createdAt: new Date().toISOString(),
+        approvedAt: null,
+        closedAt: null,
+        cancelledAt: null
+      };
+
+      try {
+        await addDoc(collection(db, CHANGES_COLLECTION), data);
+        showStatus(`Change ${changeNumber} created.`);
+        await loadChanges();
+        document.querySelector('.tab[data-tab="all"]').click();
+        document.getElementById("changeForm").reset();
+        changeNumberEl.value = "";
+      } catch (err) {
+        console.error(err);
+        showStatus("Failed to create change. Check console for details.");
+      }
+    });
+
+    // Prefill change number on load
+    async function prefillChangeNumber() {
+      changeNumberEl.value = await ensureUniqueChangeNumber();
+    }
+    changeNumberEl.addEventListener("focus", prefillChangeNumber);
+
+    // View modal
+    document.getElementById("changesTableBody").addEventListener("click", (e) => {
+      const btn = e.target.closest("button");
+      if (!btn) return;
+      const id = btn.dataset.id;
+      const action = btn.dataset.action;
+      if (action !== "view") return;
+      const ch = allChanges.find(x => x.id === id);
+      if (!ch) return;
+      const fields = [
+        ["Change Number", ch.changeNumber],
+        ["Priority", ch.priority],
+        ["Type", ch.type],
+        ["Opened By", ch.openedBy],
+        ["Configuration Item", ch.ciName],
+        ["Environment", ch.environment],
+        ["Owned By", ch.ownedBy],
+        ["Support Group", ch.supportGroup],
+        ["State", ch.state],
+        ["Planned Start", ch.plannedStart],
+        ["Planned End", ch.plannedEnd],
+        ["Created At", ch.createdAt],
+        ["Approved At", ch.approvedAt || ""],
+        ["Closed At", ch.closedAt || ""],
+        ["Cancelled At", ch.cancelledAt || ""],
+        ["Description", ch.description]
+      ];
+      document.getElementById("modalContent").innerHTML = fields.map(([k, v]) => `
+        <div>
+          <label style="font-size:12px;color:var(--muted);">${escapeHtml(k)}</label>
+          <div>${escapeHtml(v || "")}</div>
+        </div>
+      `).join("");
+      document.getElementById("modalBackdrop").style.display = "flex";
+    });
+
+    // Init
+    await loadCIs();
+    await loadChanges();
+    await prefillChangeNumber();
   </script>
 </body>
 </html>
