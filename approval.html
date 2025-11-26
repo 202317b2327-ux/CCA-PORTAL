@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Change Approval & Task Management</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #ffffff;
+      --fg: #1b1f24;
+      --muted: #6b7280;
+      --card: #f5f7fb;
+      --border: #e5e7eb;
+      --accent: #2563eb;
+      --danger: #dc2626;
+      --success: #16a34a;
+    }
+    [data-theme="dark"] {
+      --bg: #0f1115;
+      --fg: #e5e7eb;
+      --muted: #a3a3a3;
+      --card: #151821;
+      --border: #262b36;
+      --accent: #60a5fa;
+      --danger: #f87171;
+      --success: #34d399;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--fg); font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg); z-index: 10; }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand h1 { font-size: 18px; margin: 0; }
+    .theme-toggle { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--border); padding: 8px 12px; border-radius: 8px; cursor: pointer; background: var(--card); }
+    .wrapper { max-width: 1200px; margin: 0 auto; padding: 20px; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+    .tabs { display: flex; gap: 8px; border-bottom: 1px solid var(--border); margin-bottom: 12px; }
+    .tab { padding: 10px 14px; border-radius: 8px 8px 0 0; cursor: pointer; background: transparent; border: 1px solid transparent; font-weight: 600; }
+    .tab.active { background: var(--bg); border-color: var(--border); border-bottom-color: var(--bg); }
+    .hidden { display: none !important; }
+    .controls { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
+    label { font-size: 12px; color: var(--muted); }
+    select, button { padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--fg); }
+    .btn-success { background: var(--success); color: white; border-color: var(--success); }
+    .btn-danger { background: var(--danger); color: white; border-color: var(--danger); }
+    .btn-muted { background: var(--card); }
+    .status { font-size: 12px; color: var(--muted); margin-top: 8px; min-height: 16px; }
+    .table-wrap { max-height: 60vh; overflow: auto; border: 1px solid var(--border); border-radius: 10px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 10px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+    th { position: sticky; top: 0; background: var(--card); z-index: 1; }
+    .row-actions { display: flex; gap: 8px; }
+    .pill { display: inline-block; padding: 4px 8px; border-radius: 999px; font-size: 12px; border: 1px solid var(--border); background: var(--bg); }
+    .footer-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 12px; }
+    .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 50; }
+    .modal { background: var(--bg); color: var(--fg); border: 1px solid var(--border); border-radius: 12px; padding: 16px; width: min(800px, 95vw); max-height: 80vh; overflow: auto; }
+    .modal h3 { margin-top: 0; }
+    .modal .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .close-modal { float: right; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="12" r="10" opacity="0.15"/><path d="M7 12h10M12 7v10" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+      <h1>Change Approval & Task Management</h1>
+    </div>
+    <button id="themeToggle" class="theme-toggle" type="button">Toggle theme</button>
+  </header>
+
+  <main class="wrapper">
+    <div class="card">
+      <div class="tabs">
+        <button class="tab active" data-tab="approve">Change Approval</button>
+        <button class="tab" data-tab="ctasks">CTask List</button>
+      </div>
+
+      <!-- Tab 1: Change Approval -->
+      <section id="tab-approve">
+        <div class="controls">
+          <div>
+            <label>Current user</label>
+            <select id="currentUser">
+              <option>Aubair</option>
+              <option>Komal</option>
+              <option>Riya</option>
+              <option>Alex</option>
+              <option>Rajni</option>
+            </select>
+          </div>
+          <div class="status" id="statusMsg"></div>
+        </div>
+        <div class="table-wrap">
+          <table id="changesTable">
+            <thead>
+              <tr>
+                <th>Change Number</th>
+                <th>Priority</th>
+                <th>Type</th>
+                <th>Opened By</th>
+                <th>Configuration Item</th>
+                <th>Environment</th>
+                <th>Owned By</th>
+                <th>Support Group</th>
+                <th>State</th>
+                <th>Planned Start</th>
+                <th>Planned End</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="changesTableBody"></tbody>
+          </table>
+        </div>
+        <div class="footer-actions">
+          <button id="refreshChangesBtn" class="btn-muted">Refresh</button>
+        </div>
+      </section>
+
+      <!-- Tab 2: CTask List -->
+      <section id="tab-ctasks" class="hidden">
+        <div class="table-wrap">
+          <table id="ctasksTable">
+            <thead>
+              <tr>
+                <th>CTask Number</th>
+                <th>Change Number</th>
+                <th>Description</th>
+                <th>Assignment Group</th>
+                <th>Created At</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="ctasksTableBody"></tbody>
+          </table>
+        </div>
+        <div class="footer-actions">
+          <button id="exportCTasksCsvBtn" class="btn-muted">Export CSV</button>
+          <button id="refreshTasksBtn" class="btn-muted">Refresh</button>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Details modal -->
+  <div id="modalBackdrop" class="modal-backdrop">
+    <div class="modal">
+      <button class="close-modal" id="closeModalBtn">Close</button>
+      <h3 id="modalTitle">Details</h3>
+      <div id="modalContent" class="grid"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    // Firebase
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyB9_BivxcGLoY3HipP_c571pA9Robd0yPE",
+      authDomain: "bits-design-project-6a748.firebaseapp.com",
+      projectId: "bits-design-project-6a748",
+      storageBucket: "bits-design-project-6a748.firebasestorage.app",
+      messagingSenderId: "585653073256",
+      appId: "1:585653073256:web:a7ba483097c8829b3952dd"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Collections
+    const CMDB_COLLECTION = "CMDB_DUMP";
+    const CHANGES_COLLECTION = "CHANGES";
+    const CTASKS_COLLECTION = "CTASKS";
+
+    // Theme
+    const root = document.documentElement;
+    const savedTheme = localStorage.getItem("approval_theme") || "light";
+    root.setAttribute("data-theme", savedTheme);
+    document.getElementById("themeToggle").addEventListener("click", () => {
+      const next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
+      root.setAttribute("data-theme", next);
+      localStorage.setItem("approval_theme", next);
+    });
+
+    // Tabs
+    const tabs = document.querySelectorAll(".tab");
+    const tabApprove = document.getElementById("tab-approve");
+    const tabCTasks = document.getElementById("tab-ctasks");
+    tabs.forEach(t => {
+      t.addEventListener("click", () => {
+        tabs.forEach(x => x.classList.remove("active"));
+        t.classList.add("active");
+        const key = t.dataset.tab;
+        tabApprove.classList.toggle("hidden", key !== "approve");
+        tabCTasks.classList.toggle("hidden", key !== "ctasks");
+      });
+    });
+
+    // Elements
+    const currentUserEl = document.getElementById("currentUser");
+    const statusMsg = document.getElementById("statusMsg");
+    const modalBackdrop = document.getElementById("modalBackdrop");
+    const modalContent = document.getElementById("modalContent");
+    const modalTitle = document.getElementById("modalTitle");
+    document.getElementById("closeModalBtn").addEventListener("click", () => (modalBackdrop.style.display = "none"));
+
+    // State
+    let allCIs = [];
+    let allChanges = [];
+    let allTasks = [];
+
+    // Helpers
+    function escapeHtml(str = "") {
+      return String(str)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+    function showMsg(msg) {
+      statusMsg.textContent = msg;
+      setTimeout(() => { if (statusMsg.textContent === msg) statusMsg.textContent = ""; }, 3000);
+    }
+    function genCTaskNumber() {
+      const n = Math.floor(Math.random() * 1_000_0000).toString().padStart(7, "0");
+      return `CTK${n}`;
+    }
+    async function ensureUniqueCTaskNumber() {
+      for (let i = 0; i < 5; i++) {
+        const candidate = genCTaskNumber();
+        const snap = await getDocs(collection(db, CTASKS_COLLECTION));
+        const exists = snap.docs.some(d => (d.data().ctaskNumber === candidate));
+        if (!exists) return candidate;
+      }
+      const ts = Date.now().toString().slice(-7);
+      return `CTK${ts}`;
+    }
+
+    // Load CIs (for validation / support group fallback)
+    async function loadCIs() {
+      const snap = await getDocs(collection(db, CMDB_COLLECTION));
+      allCIs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    }
+
+    // Load Changes (Drafted or Approved/Cancelled for view)
+    async function loadChanges() {
+      const snap = await getDocs(collection(db, CHANGES_COLLECTION));
+      allChanges = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderChangesTable();
+    }
+
+    // Render Changes with owner-restricted actions
+    function renderChangesTable() {
+      const tbody = document.getElementById("changesTableBody");
+      const currentUser = currentUserEl.value;
+      tbody.innerHTML = "";
+      // Show all changes; actions enabled only for Drafted and owned by current user
+      allChanges.forEach(ch => {
+        const isOwner = (ch.ownedBy || "").trim().toLowerCase() === (currentUser || "").trim().toLowerCase();
+        const canApprove = ch.state === "Drafted" && isOwner;
+        const canCancel = ch.state === "Drafted" && isOwner;
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><button class="btn-muted" data-action="view-change" data-id="${ch.id}">${escapeHtml(ch.changeNumber)}</button></td>
+          <td>${escapeHtml(ch.priority || "")}</td>
+          <td>${escapeHtml(ch.type || "")}</td>
+          <td>${escapeHtml(ch.openedBy || "")}</td>
+          <td>${escapeHtml(ch.ciName || "")}</td>
+          <td>${escapeHtml(ch.environment || "")}</td>
+          <td>${escapeHtml(ch.ownedBy || "")}</td>
+          <td>${escapeHtml(ch.supportGroup || "")}</td>
+          <td><span class="pill">${escapeHtml(ch.state || "")}</span></td>
+          <td>${escapeHtml(ch.plannedStart || "")}</td>
+          <td>${escapeHtml(ch.plannedEnd || "")}</td>
+          <td class="row-actions">
+            <button class="btn-success" data-action="approve" data-id="${ch.id}" ${canApprove ? "" : "disabled"}>Approve</button>
+            <button class="btn-danger" data-action="cancel" data-id="${ch.id}" ${canCancel ? "" : "disabled"}>Cancel</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Load and render CTasks
+    async function loadCTasks() {
+      const snap = await getDocs(collection(db, CTASKS_COLLECTION));
+      allTasks = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderCTasksTable();
+    }
+    function renderCTasksTable() {
+      const tbody = document.getElementById("ctasksTableBody");
+      tbody.innerHTML = "";
+      allTasks.forEach(task => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><button class="btn-muted" data-action="view-task" data-id="${task.id}">${escapeHtml(task.ctaskNumber)}</button></td>
+          <td>${escapeHtml(task.changeNumber || "")}</td>
+          <td>${escapeHtml(task.description || "")}</td>
+          <td>${escapeHtml(task.assignmentGroup || "")}</td>
+          <td>${escapeHtml(task.createdAt || "")}</td>
+          <td><button class="btn-muted" data-action="view-task" data-id="${task.id}">View</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Export CTasks CSV
+    document.getElementById("exportCTasksCsvBtn").addEventListener("click", () => {
+      const rows = [
+        ["CTask Number","Change Number","Description","Assignment Group","Created At"],
+        ...allTasks.map(t => [
+          t.ctaskNumber || "", t.changeNumber || "", (t.description || "").replace(/\r?\n/g, " "),
+          t.assignmentGroup || "", t.createdAt || ""
+        ])
+      ];
+      const csv = rows.map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\r\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = "ctasks_dump.csv";
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+
+    // Refresh buttons
+    document.getElementById("refreshChangesBtn").addEventListener("click", async () => {
+      await loadChanges();
+      showMsg("Changes refreshed.");
+    });
+    document.getElementById("refreshTasksBtn").addEventListener("click", async () => {
+      await loadCTasks();
+      showMsg("CTasks refreshed.");
+    });
+    currentUserEl.addEventListener("change", () => renderChangesTable());
+
+    // Table actions
+    document.getElementById("changesTableBody").addEventListener("click", async (e) => {
+      const btn = e.target.closest("button");
+      if (!btn) return;
+      const id = btn.dataset.id;
+      const action = btn.dataset.action;
+      const ch = allChanges.find(x => x.id === id);
+      if (!ch) return;
+
+      if (action === "view-change") {
+        const fields = [
+          ["Change Number", ch.changeNumber],
+          ["Priority", ch.priority],
+          ["Type", ch.type],
+          ["Opened By", ch.openedBy],
+          ["Configuration Item", ch.ciName],
+          ["Environment", ch.environment],
+          ["Owned By", ch.ownedBy],
+          ["Support Group", ch.supportGroup],
+          ["State", ch.state],
+          ["Planned Start", ch.plannedStart],
+          ["Planned End", ch.plannedEnd],
+          ["Created At", ch.createdAt],
+          ["Approved At", ch.approvedAt || ""],
+          ["Cancelled At", ch.cancelledAt || ""],
+          ["Description", ch.description]
+        ];
+        modalTitle.textContent = "Change Details";
+        modalContent.innerHTML = fields.map(([k, v]) => `
+          <div>
+            <label style="font-size:12px;color:var(--muted);">${escapeHtml(k)}</label>
+            <div>${escapeHtml(v || "")}</div>
+          </div>
+        `).join("");
+        modalBackdrop.style.display = "flex";
+        return;
+      }
+
+      // Owner restriction
+      const currentUser = currentUserEl.value;
+      const isOwner = (ch.ownedBy || "").trim().toLowerCase() === (currentUser || "").trim().toLowerCase();
+      if (!isOwner || ch.state !== "Drafted") {
+        showMsg("Action not allowed.");
+        return;
+      }
+
+      if (action === "approve") {
+        try {
+          await updateDoc(doc(db, CHANGES_COLLECTION, id), {
+            state: "Approved by Group",
+            approvedAt: new Date().toISOString()
+          });
+          await createCTaskForChange(ch);
+          await loadChanges();
+          await loadCTasks();
+          showMsg(`Approved change ${ch.changeNumber} and created CTask.`);
+        } catch (err) {
+          console.error(err);
+          showMsg("Approval failed.");
+        }
+      } else if (action === "cancel") {
+        try {
+          await updateDoc(doc(db, CHANGES_COLLECTION, id), {
+            state: "Cancelled",
+            cancelledAt: new Date().toISOString()
+          });
+          await loadChanges();
+          showMsg(`Cancelled change ${ch.changeNumber}.`);
+        } catch (err) {
+          console.error(err);
+          showMsg("Cancel failed.");
+        }
+      }
+    });
+
+    // Task view actions
+    document.getElementById("ctasksTableBody").addEventListener("click", (e) => {
+      const btn = e.target.closest("button");
+      if (!btn) return;
+      const id = btn.dataset.id;
+      const action = btn.dataset.action;
+      if (action !== "view-task") return;
+      const t = allTasks.find(x => x.id === id);
+      if (!t) return;
+      const fields = [
+        ["CTask Number", t.ctaskNumber],
+        ["Change Number", t.changeNumber],
+        ["Description", t.description],
+        ["Assignment Group", t.assignmentGroup],
+        ["Created At", t.createdAt]
+      ];
+      modalTitle.textContent = "CTask Details";
+      modalContent.innerHTML = fields.map(([k, v]) => `
+        <div>
+          <label style="font-size:12px;color:var(--muted);">${escapeHtml(k)}</label>
+          <div>${escapeHtml(v || "")}</div>
+        </div>
+      `).join("");
+      modalBackdrop.style.display = "flex";
+    });
+
+    // Create CTask after approval
+    async function createCTaskForChange(ch) {
+      const ctaskNumber = await ensureUniqueCTaskNumber();
+      // Determine assignment group
+      let assignmentGroup = "CHANGE.OPERATIONS";
+      const ci = allCIs.find(c => c.id === ch.ciId);
+      if (ci && ci.supportGroup) assignmentGroup = ci.supportGroup;
+
+      const data = {
+        ctaskNumber,
+        changeNumber: ch.changeNumber,
+        description: "INSTRUCTION",
+        assignmentGroup,
+        createdAt: new Date().toISOString()
+      };
+      await addDoc(collection(db, CTASKS_COLLECTION), data);
+    }
+
+    // Init
+    await loadCIs();
+    await loadChanges();
+    await loadCTasks();
+    showMsg("Loaded.");
+  </script>
+</body>
+</html>
